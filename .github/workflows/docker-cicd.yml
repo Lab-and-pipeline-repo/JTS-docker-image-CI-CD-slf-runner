@@ -1,4 +1,4 @@
-name: Docker CI-CD
+name: Docker Build 3-tier image
 
 on:
   push:
@@ -21,13 +21,10 @@ jobs:
       working-directory: t1-database
       run: |
         docker build -t ${{ secrets.DOCKER_USERNAME }}/todo-database:stable -t ${{ secrets.DOCKER_USERNAME }}/todo-database:$(git rev-parse HEAD) .
-        
-    - name: Logout from Docker Hub
-      run: docker logout
 
   build_backend:
     runs-on: self-hosted
-
+    needs: [build_database]
     steps:
     - name: Checkout code
       uses: actions/checkout@v3
@@ -40,6 +37,7 @@ jobs:
 
   build_frontend:
     runs-on: self-hosted
+    needs: [build_backend]
 
     steps:
     - name: Checkout code
@@ -71,7 +69,7 @@ jobs:
       env:
         DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
         DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
-      run: sudo docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
+      run: docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
 
     - name: Push Docker images
       run: |
