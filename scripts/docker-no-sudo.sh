@@ -16,8 +16,9 @@ else
     # If not, add the user to the docker group
     sudo usermod -aG docker $USER
 
-    # Refresh group membership for the current user
-    exec sudo su -l $USER
-
-    echo "User added to the docker group."
+    # Force logout and login for the current user
+    echo "User added to the docker group. Logging out and logging in again..."
+    exec su - $USER
 fi
+
+echo "User successfully logged in again."
