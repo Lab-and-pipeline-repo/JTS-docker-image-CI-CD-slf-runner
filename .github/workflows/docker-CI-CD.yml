@@ -131,14 +131,15 @@ jobs:
           mkdir -p ~/secret/
           chmod -R +777 ~/secret/
           cat <<EOF > ~/secret/.env
-            PORT=3000
-            DB_PORT=5432
-            DB_HOST=192.168.140.140
-            DB_USER=subash
-            DB_PASSWORD=subash@123
-            DB_NAME=tododb
-            DB_CLIENT=pg
-            NODE_ENV=local
+          PORT=$PORT
+          DB_PORT=$DB_PORT
+          DB_HOST=$DB_HOST
+          DB_USER=$DB_USER
+          DB_PASSWORD=$DB_PASSWORD
+          DB_NAME=$DB_NAME
+          DB_CLIENT=$DB_CLIENT
+          NODE_ENV=$NODE_ENV
+          EOF
             
  
       - name: Backend deploy
