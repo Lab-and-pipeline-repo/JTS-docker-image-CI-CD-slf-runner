@@ -139,7 +139,7 @@ jobs:
             DB_NAME=tododb
             DB_CLIENT=pg
             NODE_ENV=local
-            EOF
+            
  
       - name: Backend deploy
         run: |
