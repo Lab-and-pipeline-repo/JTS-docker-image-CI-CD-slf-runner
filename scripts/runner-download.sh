@@ -7,6 +7,7 @@ echo -e "Step 1: Folder created.\n----------------------------------------------
 
 # Download the latest runner package
 echo -e "Step 2: Downloading the latest runner package...\n"
+sudo apt install -y curl
 curl -o actions-runner-linux-x64-2.315.0.tar.gz -L https://github.com/actions/runner/releases/download/v2.315.0/actions-runner-linux-x64-2.315.0.tar.gz
 echo -e "Step 2: Download completed.\n-----------------------------------------------------------------"
 
