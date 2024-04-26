@@ -18,7 +18,7 @@ else
 
     # Force logout and login for the current user
     echo "User added to the docker group. Logging out and logging in again..."
-    exec su - $USER
+    sudo exec su - $USER
 fi
 
 echo "User successfully logged in again."
