@@ -74,7 +74,7 @@ jobs:
     steps:
       - name: List Docker images
         run: |
-          sudo docker images
+          docker images
 
   scan_images:
     runs-on: self-hosted
@@ -84,19 +84,19 @@ jobs:
         run: |
             mkdir -p ~/scan-images
             ls -al ~/
-            sudo chmod -R +777 ~/scan-images
+            chmod -R +777 ~/scan-images
 
       - name: Scan Database Docker images
         run: |
-            sudo trivy image --severity HIGH,CRITICAL ${{ secrets.DOCKER_USERNAME }}/todo-database:stable > ~/scan-images/database_scan-$(git rev-parse HEAD)-$(date +'%Y-%m-%d_%H-%M').txt
+           trivy image --severity HIGH,CRITICAL ${{ secrets.DOCKER_USERNAME }}/todo-database:stable > ~/scan-images/database_scan-$(git rev-parse HEAD)-$(date +'%Y-%m-%d_%H-%M').txt
 
       - name: Scan Backend Docker images
         run: |
-            sudo trivy image --severity HIGH,CRITICAL ${{ secrets.DOCKER_USERNAME }}/todo-backend:stable > ~/scan-images/backend_scan-$(git rev-parse HEAD)-$(date +'%Y-%m-%d_%H-%M').txt
+          trivy image --severity HIGH,CRITICAL ${{ secrets.DOCKER_USERNAME }}/todo-backend:stable > ~/scan-images/backend_scan-$(git rev-parse HEAD)-$(date +'%Y-%m-%d_%H-%M').txt
 
       - name: Scan Frontend Docker images
         run: |
-            sudo trivy image --severity HIGH,CRITICAL ${{ secrets.DOCKER_USERNAME }}/todo-frontend:stable > ~/scan-images/frontend_scan-$(git rev-parse HEAD)-$(date +'%Y-%m-%d_%H-%M').txt
+          trivy image --severity HIGH,CRITICAL ${{ secrets.DOCKER_USERNAME }}/todo-frontend:stable > ~/scan-images/frontend_scan-$(git rev-parse HEAD)-$(date +'%Y-%m-%d_%H-%M').txt
 
       - name: listing scanned results
         run: |
@@ -140,7 +140,7 @@ jobs:
         env:
           DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
           DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
-        run: sudo docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
+        run: docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
       
       - name: Push Database Docker images
         run: |
