@@ -39,6 +39,10 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+      
+      - name: Logout and re-login to switch shell
+        run: |
+          sudo exec su - $USER
 
       - name: Build database Docker image
         id: build_database_image
@@ -52,6 +56,10 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+
+      - name: Logout and re-login to switch shell
+        run: |
+          sudo exec su - $USER
 
       - name: Build backend Docker image
         id: build_backend_image
