@@ -42,7 +42,7 @@ jobs:
 
       - name: Build database Docker image
         id: build_database_image
-        working-directory: t1-database
+        working-directory: source-code/t1-database
         run: |
           docker build -t ${{ secrets.DOCKER_USERNAME }}/todo-database:stable -t ${{ secrets.DOCKER_USERNAME }}/todo-database:$(git rev-parse HEAD) .
 
@@ -55,7 +55,7 @@ jobs:
 
       - name: Build backend Docker image
         id: build_backend_image
-        working-directory: t2-backend
+        working-directory: source-code/t2-backend
         run: |
           docker build -t ${{ secrets.DOCKER_USERNAME }}/todo-backend:stable -t ${{ secrets.DOCKER_USERNAME }}/todo-backend:$(git rev-parse HEAD) .
 
@@ -68,7 +68,7 @@ jobs:
 
       - name: Build frontend Docker image
         id: build_frontend_image
-        working-directory: t3-frontend
+        working-directory: source-code/t3-frontend
         run: |
           docker build -t ${{ secrets.DOCKER_USERNAME }}/todo-frontend:stable -t ${{ secrets.DOCKER_USERNAME }}/todo-frontend:$(git rev-parse HEAD) .
         
@@ -167,22 +167,23 @@ jobs:
           DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
         run: docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
       
-      - name: Push Database Docker images
-        run: |
-          docker push ${{ secrets.DOCKER_USERNAME }}/todo-database:stable
-          docker push ${{ secrets.DOCKER_USERNAME }}/todo-database:$(git rev-parse HEAD)
-      
-      - name: Push Backend Docker images
-        run: |
-          docker push ${{ secrets.DOCKER_USERNAME }}/todo-backend:stable
-          docker push ${{ secrets.DOCKER_USERNAME }}/todo-backend:$(git rev-parse HEAD)
-      
-      - name: Push Frontend Docker images
-        run: |
-          docker push ${{ secrets.DOCKER_USERNAME }}/todo-frontend:stable
-          docker push ${{ secrets.DOCKER_USERNAME }}/todo-frontend:$(git rev-parse HEAD)
-      
-      - name: Logout from Docker Hub
-        run: docker logout
 
+  write_logs:
+    runs-on: self-hosted
+    needs: [deploy,push_images]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+              
+      - name: Create log directory
+        run: mkdir -p ~/Github-action/3-Tier/pipeline-log/
+           
+      - name: Copy GitHub Actions logs
+        run: cp -r $GITHUB_WORKSPACE/.github/workflows/ ~/Github-action/3-Tier/pipeline-log/
+        
+      - name: Create log file
+        run: |
+            git log --pretty=format:"%h" -n 1 > ~/Github-action/3-Tier/pipeline-log/git-commithash.log
+            echo $(date +'%Y-%m-%d') >> ~/Github-action/3-Tier/pipeline-log/git-commithash.log
+            cat ~/Github-action/3-Tier/pipeline-log/*.log >> ~/Github-action/3-Tier/pipeline-log/git-commithash-3-tier-log-$(date +'%Y-%m-%d').log
         
