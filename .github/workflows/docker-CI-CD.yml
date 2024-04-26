@@ -18,7 +18,9 @@ jobs:
 
       - name: listing content
         working-directory: scripts  
-        run: ls -al
+        run: |
+          ps -p $$
+          ls -al
 
       - name: Install dependencies
         working-directory: scripts  
@@ -32,7 +34,7 @@ jobs:
           whoami
           chmod +x docker-no-sudo.sh
           ./docker-no-sudo.sh
-          docker ps
+          ps -p $$
 
   build_database:
     runs-on: self-hosted
@@ -44,6 +46,7 @@ jobs:
       - name: Logout and re-login to switch shell
         run: |
           sudo su - $USER
+          ps -p $$
 
       - name: Build database Docker image
         id: build_database_image
@@ -61,6 +64,7 @@ jobs:
       - name: Logout and re-login to switch shell
         run: |
           sudo su - $USER
+          ps -p $$
 
       - name: Build backend Docker image
         id: build_backend_image
