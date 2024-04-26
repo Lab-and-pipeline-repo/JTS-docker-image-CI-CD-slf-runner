@@ -21,10 +21,7 @@ jobs:
       - name: Install dependencies
         run: |
             chmod +x install-dependency.sh
-            ./install-dependency.sh
-
-        # Redirecting console output to a file
-        > ~/Github-action/3-Tier/pipeline-log/install_dependencies_$(date +'%Y-%m-%d_%H-%M').log 2>&1
+            ./install-dependency.sh | tee -a ~/Github-action/3-Tier/pipeline-log/3-tier$(git rev-parse --short HEAD)_$(date +'%Y-%m-%d').log
 
   build_database:
     runs-on: self-hosted
@@ -34,9 +31,9 @@ jobs:
         uses: actions/checkout@v3
       - name: Build database Docker image
         run: |
-          docker build -t ${{ secrets.DOCKER_USERNAME }}/todo-database:stable -t ${{ secrets.DOCKER_USERNAME }}/todo-database:$(git rev-parse HEAD) .
-        # Redirecting console output to a file
-        > ~/Github-action/3-Tier/pipeline-log/build_database_$(date +'%Y-%m-%d_%H-%M').log 2>&1
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/todo-database:stable \
+                       -t ${{ secrets.DOCKER_USERNAME }}/todo-database:$(git rev-parse --short HEAD) . \
+                       | tee -a ~/Github-action/3-Tier/pipeline-log/3-tier$(git rev-parse --short HEAD)_$(date +'%Y-%m-%d').log
 
   build_backend:
     runs-on: self-hosted
@@ -46,9 +43,9 @@ jobs:
         uses: actions/checkout@v3
       - name: Build backend Docker image
         run: |
-          docker build -t ${{ secrets.DOCKER_USERNAME }}/todo-backend:stable -t ${{ secrets.DOCKER_USERNAME }}/todo-backend:$(git rev-parse HEAD) .
-        # Redirecting console output to a file
-        > ~/Github-action/3-Tier/pipeline-log/build_backend_$(date +'%Y-%m-%d_%H-%M').log 2>&1
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/todo-backend:stable \
+                       -t ${{ secrets.DOCKER_USERNAME }}/todo-backend:$(git rev-parse --short HEAD) . \
+                       | tee -a ~/Github-action/3-Tier/pipeline-log/3-tier$(git rev-parse --short HEAD)_$(date +'%Y-%m-%d').log
 
   build_frontend:
     runs-on: self-hosted
@@ -58,9 +55,9 @@ jobs:
         uses: actions/checkout@v3
       - name: Build frontend Docker image
         run: |
-          docker build -t ${{ secrets.DOCKER_USERNAME }}/todo-frontend:stable -t ${{ secrets.DOCKER_USERNAME }}/todo-frontend:$(git rev-parse HEAD) .
-        # Redirecting console output to a file
-        > ~/Github-action/3-Tier/pipeline-log/build_frontend_$(date +'%Y-%m-%d_%H-%M').log 2>&1
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/todo-frontend:stable \
+                       -t ${{ secrets.DOCKER_USERNAME }}/todo-frontend:$(git rev-parse --short HEAD) . \
+                       | tee -a ~/Github-action/3-Tier/pipeline-log/3-tier$(git rev-parse --short HEAD)_$(date +'%Y-%m-%d').log
 
   list_images:
     runs-on: self-hosted
@@ -70,9 +67,7 @@ jobs:
         uses: actions/checkout@v3
       - name: List Docker images
         run: |
-          docker images
-        # Redirecting console output to a file
-        > ~/Github-action/3-Tier/pipeline-log/list_images_$(date +'%Y-%m-%d_%H-%M').log 2>&1
+          docker images | tee -a ~/Github-action/3-Tier/pipeline-log/3-tier$(git rev-parse --short HEAD)_$(date +'%Y-%m-%d').log
 
   scan_images:
     runs-on: self-hosted
@@ -82,13 +77,19 @@ jobs:
         uses: actions/checkout@v3
       - name: Scan Database Docker images
         run: |
-          trivy image --severity HIGH,CRITICAL ${{ secrets.DOCKER_USERNAME }}/todo-database:stable > ~/Github-action/3-Tier/scan-images/database_scan-$(git rev-parse HEAD)-$(date +'%Y-%m-%d_%H-%M').txt
+          trivy image --severity HIGH,CRITICAL ${{ secrets.DOCKER_USERNAME }}/todo-database:stable \
+                      >> ~/Github-action/3-Tier/scan-images/database_scan-$(git rev-parse --short HEAD)-$(date +'%Y-%m-%d').txt \
+                      | tee -a ~/Github-action/3-Tier/pipeline-log/3-tier$(git rev-parse --short HEAD)_$(date +'%Y-%m-%d').log
       - name: Scan Backend Docker images
         run: |
-          trivy image --severity HIGH,CRITICAL ${{ secrets.DOCKER_USERNAME }}/todo-backend:stable > ~/Github-action/3-Tier/scan-images/backend_scan-$(git rev-parse HEAD)-$(date +'%Y-%m-%d_%H-%M').txt
+          trivy image --severity HIGH,CRITICAL ${{ secrets.DOCKER_USERNAME }}/todo-backend:stable \
+                      >> ~/Github-action/3-Tier/scan-images/backend_scan-$(git rev-parse --short HEAD)-$(date +'%Y-%m-%d').txt \
+                      | tee -a ~/Github-action/3-Tier/pipeline-log/3-tier$(git rev-parse --short HEAD)_$(date +'%Y-%m-%d').log
       - name: Scan Frontend Docker images
         run: |
-          trivy image --severity HIGH,CRITICAL ${{ secrets.DOCKER_USERNAME }}/todo-frontend:stable > ~/Github-action/3-Tier/scan-images/frontend_scan-$(git rev-parse HEAD)-$(date +'%Y-%m-%d_%H-%M').txt
+          trivy image --severity HIGH,CRITICAL ${{ secrets.DOCKER_USERNAME }}/todo-frontend:stable \
+                      >> ~/Github-action/3-Tier/scan-images/frontend_scan-$(git rev-parse --short HEAD)-$(date +'%Y-%m-%d').txt \
+                      | tee -a ~/Github-action/3-Tier/pipeline-log/3-tier$(git rev-parse --short HEAD)_$(date +'%Y-%m-%d').log
 
   deploy:
     needs: [build_database, build_backend, build_frontend]
@@ -105,7 +106,13 @@ jobs:
           docker network create --subnet=172.30.0.0/24 bridge-subas-script-172.30.0.0-sl-24 --driver bridge
       - name: Database deploy
         run: |
-          docker run -itd --name tododb-container -e POSTGRES_USER=${{ secrets.DB_USER }} -e POSTGRES_PASSWORD=${{ secrets.DB_PASSWORD }} -e POSTGRES_DB=${{ secrets.DB_NAME }} --network=bridge-subas-script-172.30.0.0-sl-24 --ip 172.30.0.2 -p ${{ secrets.DB_PORT }}:5432 ${{ secrets.DOCKER_USERNAME }}/todo-database:stable
+          docker run -itd --name tododb-container -e POSTGRES_USER=${{ secrets.DB_USER }} \
+                         -e POSTGRES_PASSWORD=${{ secrets.DB_PASSWORD }} \
+                         -e POSTGRES_DB=${{ secrets.DB_NAME }} \
+                         --network=bridge-subas-script-172.30.0.0-sl-24 \
+                         --ip 172.30.0.2 -p ${{ secrets.DB_PORT }}:5432 \
+                         ${{ secrets.DOCKER_USERNAME }}/todo-database:stable \
+                         | tee -a ~/Github-action/3-Tier/pipeline-log/3-tier$(git rev-parse --short HEAD)_$(date +'%Y-%m-%d').log
           sleep 20
       - name: Backend secret setup
         run: |
@@ -123,10 +130,18 @@ jobs:
           EOF
       - name: Backend deploy
         run: |
-          docker run -itd --name todoback-container --network=bridge-subas-script-172.30.0.0-sl-24 --ip 172.30.0.3  --env-file ~/Github-action/3-Tier/secret/.env  -p ${{ secrets.PORT }}:3000 ${{ secrets.DOCKER_USERNAME }}/todo-backend:stable
+          docker run -itd --name todoback-container --network=bridge-subas-script-172.30.0.0-sl-24 \
+                         --ip 172.30.0.3 \
+                         --env-file ~/Github-action/3-Tier/secret/.env  \
+                         -p ${{ secrets.PORT }}:3000 \
+                         ${{ secrets.DOCKER_USERNAME }}/todo-backend:stable \
+                         | tee -a ~/Github-action/3-Tier/pipeline-log/3-tier$(git rev-parse --short HEAD)_$(date +'%Y-%m-%d').log
       - name: Frontend deploy
         run: |
-          docker run -itd --name todofront-container --network=bridge-subas-script-172.30.0.0-sl-24 --ip 172.30.0.4  -p 5173:5173 ${{ secrets.DOCKER_USERNAME }}/todo-frontend:stable
+          docker run -itd --name todofront-container --network=bridge-subas-script-172.30.0.0-sl-24 \
+                         --ip 172.30.0.4  -p 5173:5173 \
+                         ${{ secrets.DOCKER_USERNAME }}/todo-frontend:stable \
+                         | tee -a ~/Github-action/3-Tier/pipeline-log/3-tier$(git rev-parse --short HEAD)_$(date +'%Y-%m-%d').log
 
   push_images:
     runs-on: self-hosted
@@ -135,19 +150,28 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
       - name: Login to Docker Hub
-        run: docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
+        run: |
+            docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }} \
+            | tee -a ~/Github-action/3-Tier/pipeline-log/3-tier$(git rev-parse --short HEAD)_$(date +'%Y-%m-%d').log
+
       - name: Push Database Docker images
         run: |
           docker push ${{ secrets.DOCKER_USERNAME }}/todo-database:stable
-          docker push ${{ secrets.DOCKER_USERNAME }}/todo-database:$(git rev-parse HEAD)
+          docker push ${{ secrets.DOCKER_USERNAME }}/todo-database:$(git rev-parse --short HEAD) \
+          | tee -a ~/Github-action/3-Tier/pipeline-log/3-tier$(git rev-parse --short HEAD)_$(date +'%Y-%m-%d').log
+
       - name: Push Backend Docker images
         run: |
           docker push ${{ secrets.DOCKER_USERNAME }}/todo-backend:stable
-          docker push ${{ secrets.DOCKER_USERNAME }}/todo-backend:$(git rev-parse HEAD)
+          docker push ${{ secrets.DOCKER_USERNAME }}/todo-backend:$(git rev-parse --short HEAD) \
+          | tee -a ~/Github-action/3-Tier/pipeline-log/3-tier$(git rev-parse --short HEAD)_$(date +'%Y-%m-%d').log
+
       - name: Push Frontend Docker images
         run: |
           docker push ${{ secrets.DOCKER_USERNAME }}/todo-frontend:stable
-          docker push ${{ secrets.DOCKER_USERNAME }}/todo-frontend:$(git rev-parse HEAD)
+          docker push ${{ secrets.DOCKER_USERNAME }}/todo-frontend:$(git rev-parse --short HEAD) \
+          | tee -a ~/Github-action/3-Tier/pipeline-log/3-tier$(git rev-parse --short HEAD)_$(date +'%Y-%m-%d').log
+
       - name: Logout from Docker Hub
         run: docker logout
 
@@ -162,5 +186,5 @@ jobs:
       - name: Save job logs
         run: |
           for log_file in $GITHUB_WORKSPACE/**/*.log; do
-            cat $log_file >> ~/Github-action/3-Tier/pipeline-log/${log_file##*/}_$(date +'%Y-%m-%d_%H-%M').txt
+            cat $log_file >> ~/Github-action/3-Tier/pipeline-log/${log_file##*/}_$(date +'%Y-%m-%d').txt
           done
