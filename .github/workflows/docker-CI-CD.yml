@@ -19,7 +19,6 @@ jobs:
       - name: listing content
         working-directory: scripts  
         run: |
-          ps -p $$
           ls -al
 
       - name: Install dependencies
@@ -34,19 +33,12 @@ jobs:
           whoami
           chmod +x docker-no-sudo.sh
           ./docker-no-sudo.sh
-          ps -p $$
-
   build_database:
     runs-on: self-hosted
     needs: install_dependencies
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-      
-      - name: Logout and re-login to switch shell
-        run: |
-          sudo su - $USER
-          ps -p $$
 
       - name: Build database Docker image
         id: build_database_image
@@ -60,11 +52,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-
-      - name: Logout and re-login to switch shell
-        run: |
-          sudo su - $USER
-          ps -p $$
 
       - name: Build backend Docker image
         id: build_backend_image
@@ -101,21 +88,21 @@ jobs:
     steps:
       - name: Create directory for scan images
         run: |
-            mkdir -p ~/scan-images
+            mkdir -p ~/Github-action/3-Tier/scan-images/
             ls -al ~/
-            chmod -R +777 ~/scan-images
+            chmod -R +755 ~/Github-action/3-Tier/scan-images/
 
       - name: Scan Database Docker images
         run: |
-           trivy image --severity HIGH,CRITICAL ${{ secrets.DOCKER_USERNAME }}/todo-database:stable > ~/scan-images/database_scan-$(git rev-parse HEAD)-$(date +'%Y-%m-%d_%H-%M').txt
+           trivy image --severity HIGH,CRITICAL ${{ secrets.DOCKER_USERNAME }}/todo-database:stable > ~/Github-action/3-Tier/scan-images/database_scan-$(git rev-parse HEAD)-$(date +'%Y-%m-%d_%H-%M').txt
 
       - name: Scan Backend Docker images
         run: |
-          trivy image --severity HIGH,CRITICAL ${{ secrets.DOCKER_USERNAME }}/todo-backend:stable > ~/scan-images/backend_scan-$(git rev-parse HEAD)-$(date +'%Y-%m-%d_%H-%M').txt
+          trivy image --severity HIGH,CRITICAL ${{ secrets.DOCKER_USERNAME }}/todo-backend:stable > ~/Github-action/3-Tier/scan-images/backend_scan-$(git rev-parse HEAD)-$(date +'%Y-%m-%d_%H-%M').txt
 
       - name: Scan Frontend Docker images
         run: |
-          trivy image --severity HIGH,CRITICAL ${{ secrets.DOCKER_USERNAME }}/todo-frontend:stable > ~/scan-images/frontend_scan-$(git rev-parse HEAD)-$(date +'%Y-%m-%d_%H-%M').txt
+          trivy image --severity HIGH,CRITICAL ${{ secrets.DOCKER_USERNAME }}/todo-frontend:stable > ~/Github-action/3-Tier/scan-images/frontend_scan-$(git rev-parse HEAD)-$(date +'%Y-%m-%d_%H-%M').txt
 
       - name: listing scanned results
         run: |
@@ -146,9 +133,9 @@ jobs:
       
       - name: Backend secret setup
         run: |
-          mkdir -p ~/secret/
-          chmod -R +777 ~/secret/
-          cat <<EOF > ~/secret/.env
+          mkdir -p ~/Github-action/3-Tier/secret/
+          chmod -R +755 ~/Github-action/3-Tier/secret/
+          cat <<EOF > ~/Github-action/3-Tier/secret/.env
           PORT=${{ secrets.PORT }}
           DB_PORT=${{ secrets.DB_PORT }}
           DB_HOST=${{ secrets.DB_HOST }}
@@ -161,7 +148,7 @@ jobs:
  
       - name: Backend deploy
         run: |
-          docker run -itd --name todoback-container --network=bridge-subas-script-172.30.0.0-sl-24 --ip 172.30.0.3  --env-file ~/secret/.env  -p ${{ secrets.PORT }}:3000 ${{ secrets.DOCKER_USERNAME }}/todo-backend:stable
+          docker run -itd --name todoback-container --network=bridge-subas-script-172.30.0.0-sl-24 --ip 172.30.0.3  --env-file ~/Github-action/3-Tier/secret/.env  -p ${{ secrets.PORT }}:3000 ${{ secrets.DOCKER_USERNAME }}/todo-backend:stable
         
       - name: Frontend deploy
         run: |
