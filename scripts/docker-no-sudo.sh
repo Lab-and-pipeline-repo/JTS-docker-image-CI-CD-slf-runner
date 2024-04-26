@@ -15,6 +15,9 @@ if groups $USER | grep &>/dev/null '\bdocker\b'; then
 else
     # If not, add the user to the docker group
     sudo gpasswd -a $USER docker
-    newgrp docker
+
+    # Refresh group membership without logging out
+    exec sg docker newgrp
+
     echo "User added to the docker group."
 fi
