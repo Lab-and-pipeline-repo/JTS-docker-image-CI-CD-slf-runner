@@ -112,7 +112,7 @@ jobs:
         working-directory: scripts
         run: |
           chmod +x kill.sh
-          ./kill.sh
+          ./kill.sh || true
         
       - name: network-adpater
         run: |
