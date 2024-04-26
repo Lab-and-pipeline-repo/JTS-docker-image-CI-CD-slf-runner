@@ -110,7 +110,12 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      
+      - name: Remove Previous Container and config
+        working-directory: scripts
+        run: |
+          chmod +x kill.sh
+          ./kill.sh
+        
       - name: network-adpater
         run: |
           docker network create --subnet=172.30.0.0/24 bridge-subas-script-172.30.0.0-sl-24 --driver bridge
