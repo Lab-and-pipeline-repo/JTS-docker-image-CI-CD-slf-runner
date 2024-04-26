@@ -26,6 +26,12 @@ jobs:
           chmod +x install-dependency.sh
           ./install-dependency.sh
 
+      - name: Adding user to Dockergroup
+        working-directory: scripts
+        run :
+          chmod +x docker-no-sudo.sh
+          ./docker-no-sudo.sh
+
   build_database:
     runs-on: self-hosted
     needs: install_dependencies
