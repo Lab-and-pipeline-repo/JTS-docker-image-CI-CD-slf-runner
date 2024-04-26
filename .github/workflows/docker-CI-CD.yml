@@ -29,6 +29,7 @@ jobs:
       - name: Adding user to Dockergroup
         working-directory: scripts
         run : |
+          whoami
           chmod +x docker-no-sudo.sh
           ./docker-no-sudo.sh
 
