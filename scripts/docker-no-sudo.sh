@@ -16,12 +16,8 @@ else
     # If not, add the user to the docker group
     sudo usermod -aG docker $USER
 
-    # Refresh group membership in the current shell session
-    if [ -z "$GITHUB_ACTIONS" ]; then
-        exec sg docker newgrp
-    else
-        exec newgrp docker
-    fi
+    # Refresh group membership for the current user
+    exec sudo su -l $USER
 
     echo "User added to the docker group."
 fi
