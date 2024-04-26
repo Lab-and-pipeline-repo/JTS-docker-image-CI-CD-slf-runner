@@ -19,6 +19,7 @@ jobs:
         run: mkdir -p ~/Github-action/3-Tier/pipeline-log/
       
       - name: Install dependencies
+        working-directory: scripts 
         run: |
             chmod +x install-dependency.sh
             ./install-dependency.sh | tee -a ~/Github-action/3-Tier/pipeline-log/3-tier$(git rev-parse --short HEAD)_$(date +'%Y-%m-%d').log
@@ -30,6 +31,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
       - name: Build database Docker image
+        working-directory: source-code/t1-database
         run: |
           docker build -t ${{ secrets.DOCKER_USERNAME }}/todo-database:stable \
                        -t ${{ secrets.DOCKER_USERNAME }}/todo-database:$(git rev-parse --short HEAD) . \
@@ -42,6 +44,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
       - name: Build backend Docker image
+        working-directory: source-code/t2-backend
         run: |
           docker build -t ${{ secrets.DOCKER_USERNAME }}/todo-backend:stable \
                        -t ${{ secrets.DOCKER_USERNAME }}/todo-backend:$(git rev-parse --short HEAD) . \
@@ -54,6 +57,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
       - name: Build frontend Docker image
+        working-directory: source-code/t3-frontend
         run: |
           docker build -t ${{ secrets.DOCKER_USERNAME }}/todo-frontend:stable \
                        -t ${{ secrets.DOCKER_USERNAME }}/todo-frontend:$(git rev-parse --short HEAD) . \
@@ -98,6 +102,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
       - name: Remove Previous Container and config
+        working-directory: scripts 
         run: |
           chmod +x kill.sh
           ./kill.sh || true
