@@ -175,9 +175,9 @@ jobs:
       - name: Logout from Docker Hub
         run: docker logout
 
-  write_logs:
+  archieve_logs:
     runs-on: self-hosted
-    needs: [push_images]
+    needs: [push_images,scan_images]
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
