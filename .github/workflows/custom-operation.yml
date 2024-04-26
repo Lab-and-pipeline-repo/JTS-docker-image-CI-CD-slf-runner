@@ -24,7 +24,7 @@ jobs:
         run: |
             echo "Upgrading Docker,GIT and TRIVY"
             whoami
-            sudo chmod +x install-update.sh
+            chmod +x install-update.sh
             sudo ./install-update.sh
   spawn-container:
     if: github.event.inputs.environment == 'spawn-container'
@@ -35,8 +35,8 @@ jobs:
         run: |
             echo "Creating containers"
             whoami
-            sudo chmod +x spawn_container.sh
-            sudo ./spawn_container.sh
+            chmod +x spawn_container.sh
+            ./spawn_container.sh
   delete-container:
     if: github.event.inputs.environment == 'delete-container'
     runs-on: self-hosted
@@ -46,8 +46,8 @@ jobs:
         run: |
             echo "Deleting containers"
             whoami
-            sudo chmod +x kill.sh
-            sudo ./kill.sh
+            chmod +x kill.sh
+            ./kill.sh
 
   scan-images:
     if: github.event.inputs.environment == 'scan-images'
@@ -55,21 +55,21 @@ jobs:
     steps:
         - name: Create directory for scan images
           run: |
-              sudo mkdir -p /home/ec2-user/scan-images
-              sudo ls -al /home/ec2-user/
-              sudo chmod -R +777 /home/ec2-user/scan-images
+              mkdir -p /home/ec2-user/scan-images
+              ls -al /home/ec2-user/
+              chmod -R +777 /home/ec2-user/scan-images
   
         - name: Scan Database Docker images
           run: |
-              sudo trivy image --severity HIGH,CRITICAL ${{ secrets.DOCKER_USERNAME }}/todo-database:stable > /home/ec2-user/scan-images/database_scan-$(git rev-parse HEAD)-$(date +'%Y-%m-%d_%H-%M').txt
+              trivy image --severity HIGH,CRITICAL ${{ secrets.DOCKER_USERNAME }}/todo-database:stable > /home/ec2-user/scan-images/database_scan-$(git rev-parse HEAD)-$(date +'%Y-%m-%d_%H-%M').txt
   
         - name: Scan Backend Docker images
           run: |
-              sudo trivy image --severity HIGH,CRITICAL ${{ secrets.DOCKER_USERNAME }}/todo-backend:stable > /home/ec2-user/scan-images/backend_scan-$(git rev-parse HEAD)-$(date +'%Y-%m-%d_%H-%M').txt
+              trivy image --severity HIGH,CRITICAL ${{ secrets.DOCKER_USERNAME }}/todo-backend:stable > /home/ec2-user/scan-images/backend_scan-$(git rev-parse HEAD)-$(date +'%Y-%m-%d_%H-%M').txt
   
         - name: Scan Frontend Docker images
           run: |
-              sudo trivy image --severity HIGH,CRITICAL ${{ secrets.DOCKER_USERNAME }}/todo-frontend:stable > /home/ec2-user/scan-images/frontend_scan-$(git rev-parse HEAD)-$(date +'%Y-%m-%d_%H-%M').txt
+              trivy image --severity HIGH,CRITICAL ${{ secrets.DOCKER_USERNAME }}/todo-frontend:stable > /home/ec2-user/scan-images/frontend_scan-$(git rev-parse HEAD)-$(date +'%Y-%m-%d_%H-%M').txt
   
         - name: listing scanned results
           run: |
@@ -86,22 +86,22 @@ jobs:
           env:
             DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
             DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
-          run: sudo docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
+          run: docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
         
         - name: Push Database Docker images
           run: |
-            sudo docker push ${{ secrets.DOCKER_USERNAME }}/todo-database:stable
-            sudo docker push ${{ secrets.DOCKER_USERNAME }}/todo-database:$(git rev-parse HEAD)
+            docker push ${{ secrets.DOCKER_USERNAME }}/todo-database:stable
+            docker push ${{ secrets.DOCKER_USERNAME }}/todo-database:$(git rev-parse HEAD)
         
         - name: Push Backend Docker images
           run: |
-            sudo docker push ${{ secrets.DOCKER_USERNAME }}/todo-backend:stable
-            sudo docker push ${{ secrets.DOCKER_USERNAME }}/todo-backend:$(git rev-parse HEAD)
+            docker push ${{ secrets.DOCKER_USERNAME }}/todo-backend:stable
+            docker push ${{ secrets.DOCKER_USERNAME }}/todo-backend:$(git rev-parse HEAD)
         
         - name: Push Frontend Docker images
           run: |
-            sudo docker push ${{ secrets.DOCKER_USERNAME }}/todo-frontend:stable
-            sudo docker push ${{ secrets.DOCKER_USERNAME }}/todo-frontend:$(git rev-parse HEAD)
+            docker push ${{ secrets.DOCKER_USERNAME }}/todo-frontend:stable
+            docker push ${{ secrets.DOCKER_USERNAME }}/todo-frontend:$(git rev-parse HEAD)
         
         - name: Logout from Docker Hub
           run: docker logout
