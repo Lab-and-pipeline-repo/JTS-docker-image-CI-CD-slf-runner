@@ -22,3 +22,6 @@ else
 fi
 
 echo "User successfully logged in again."
+# Restarting docker otherwise it will not run without sudo in github action
+sudo systemctl restart docker
+echo "docker service restarted to reflect change"
