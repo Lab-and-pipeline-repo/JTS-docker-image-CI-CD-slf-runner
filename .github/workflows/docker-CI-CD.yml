@@ -11,40 +11,32 @@ on:
 jobs:
   install_dependencies:
     runs-on: self-hosted
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-
-      - name: listing content
-        working-directory: scripts  
-        run: |
-          ls -al
-
+      
+      - name: Create log directory
+        run: mkdir -p ~/Github-action/3-Tier/pipeline-log/
+      
       - name: Install dependencies
-        working-directory: scripts  
         run: |
-          chmod +x install-dependency.sh
-          ./install-dependency.sh
+            chmod +x install-dependency.sh
+            ./install-dependency.sh
 
-      - name: Adding user to Dockergroup
-        working-directory: scripts
-        run : |
-          whoami
-          chmod +x docker-no-sudo.sh
-          ./docker-no-sudo.sh
+        # Redirecting console output to a file
+        > ~/Github-action/3-Tier/pipeline-log/install_dependencies_$(date +'%Y-%m-%d_%H-%M').log 2>&1
+
   build_database:
     runs-on: self-hosted
     needs: install_dependencies
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-
       - name: Build database Docker image
-        id: build_database_image
-        working-directory: source-code/t1-database
         run: |
           docker build -t ${{ secrets.DOCKER_USERNAME }}/todo-database:stable -t ${{ secrets.DOCKER_USERNAME }}/todo-database:$(git rev-parse HEAD) .
+        # Redirecting console output to a file
+        > ~/Github-action/3-Tier/pipeline-log/build_database_$(date +'%Y-%m-%d_%H-%M').log 2>&1
 
   build_backend:
     runs-on: self-hosted
@@ -52,12 +44,11 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-
       - name: Build backend Docker image
-        id: build_backend_image
-        working-directory: source-code/t2-backend
         run: |
           docker build -t ${{ secrets.DOCKER_USERNAME }}/todo-backend:stable -t ${{ secrets.DOCKER_USERNAME }}/todo-backend:$(git rev-parse HEAD) .
+        # Redirecting console output to a file
+        > ~/Github-action/3-Tier/pipeline-log/build_backend_$(date +'%Y-%m-%d_%H-%M').log 2>&1
 
   build_frontend:
     runs-on: self-hosted
@@ -65,48 +56,39 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-
       - name: Build frontend Docker image
-        id: build_frontend_image
-        working-directory: source-code/t3-frontend
         run: |
           docker build -t ${{ secrets.DOCKER_USERNAME }}/todo-frontend:stable -t ${{ secrets.DOCKER_USERNAME }}/todo-frontend:$(git rev-parse HEAD) .
-        
+        # Redirecting console output to a file
+        > ~/Github-action/3-Tier/pipeline-log/build_frontend_$(date +'%Y-%m-%d_%H-%M').log 2>&1
+
   list_images:
     runs-on: self-hosted
     needs: [build_database, build_backend, build_frontend]
-    outputs:
-      stdout: ${{ steps.build_database_image.outputs.stdout }}${{ steps.build_backend_image.outputs.stdout }}${{ steps.build_frontend_image.outputs.stdout }}
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
       - name: List Docker images
         run: |
           docker images
+        # Redirecting console output to a file
+        > ~/Github-action/3-Tier/pipeline-log/list_images_$(date +'%Y-%m-%d_%H-%M').log 2>&1
 
   scan_images:
     runs-on: self-hosted
     needs: list_images
     steps:
-      - name: Create directory for scan images
-        run: |
-            mkdir -p ~/Github-action/3-Tier/scan-images/
-            ls -al ~/
-            chmod -R +755 ~/Github-action/3-Tier/scan-images/
-
+      - name: Checkout code
+        uses: actions/checkout@v3
       - name: Scan Database Docker images
         run: |
-           trivy image --severity HIGH,CRITICAL ${{ secrets.DOCKER_USERNAME }}/todo-database:stable > ~/Github-action/3-Tier/scan-images/database_scan-$(git rev-parse HEAD)-$(date +'%Y-%m-%d_%H-%M').txt
-
+          trivy image --severity HIGH,CRITICAL ${{ secrets.DOCKER_USERNAME }}/todo-database:stable > ~/Github-action/3-Tier/scan-images/database_scan-$(git rev-parse HEAD)-$(date +'%Y-%m-%d_%H-%M').txt
       - name: Scan Backend Docker images
         run: |
           trivy image --severity HIGH,CRITICAL ${{ secrets.DOCKER_USERNAME }}/todo-backend:stable > ~/Github-action/3-Tier/scan-images/backend_scan-$(git rev-parse HEAD)-$(date +'%Y-%m-%d_%H-%M').txt
-
       - name: Scan Frontend Docker images
         run: |
           trivy image --severity HIGH,CRITICAL ${{ secrets.DOCKER_USERNAME }}/todo-frontend:stable > ~/Github-action/3-Tier/scan-images/frontend_scan-$(git rev-parse HEAD)-$(date +'%Y-%m-%d_%H-%M').txt
-
-      - name: listing scanned results
-        run: |
-            ls -al ~/scan-images
 
   deploy:
     needs: [build_database, build_backend, build_frontend]
@@ -114,23 +96,17 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-
       - name: Remove Previous Container and config
-        working-directory: scripts
         run: |
           chmod +x kill.sh
           ./kill.sh || true
-        
-      - name: network-adpater
+      - name: Network Adapter
         run: |
           docker network create --subnet=172.30.0.0/24 bridge-subas-script-172.30.0.0-sl-24 --driver bridge
-
       - name: Database deploy
         run: |
-          ls  -al
-          docker run  -itd --name tododb-container -e POSTGRES_USER=${{ secrets.DB_USER }} -e POSTGRES_PASSWORD=${{ secrets.DB_PASSWORD }} -e POSTGRES_DB=${{ secrets.DB_NAME }} --network=bridge-subas-script-172.30.0.0-sl-24 --ip 172.30.0.2 -p ${{ secrets.DB_PORT }}:5432 ${{ secrets.DOCKER_USERNAME }}/todo-database:stable
+          docker run -itd --name tododb-container -e POSTGRES_USER=${{ secrets.DB_USER }} -e POSTGRES_PASSWORD=${{ secrets.DB_PASSWORD }} -e POSTGRES_DB=${{ secrets.DB_NAME }} --network=bridge-subas-script-172.30.0.0-sl-24 --ip 172.30.0.2 -p ${{ secrets.DB_PORT }}:5432 ${{ secrets.DOCKER_USERNAME }}/todo-database:stable
           sleep 20
-      
       - name: Backend secret setup
         run: |
           mkdir -p ~/Github-action/3-Tier/secret/
@@ -145,11 +121,9 @@ jobs:
           DB_CLIENT=${{ secrets.DB_CLIENT }}
           NODE_ENV=${{ secrets.NODE_ENV }}
           EOF
- 
       - name: Backend deploy
         run: |
           docker run -itd --name todoback-container --network=bridge-subas-script-172.30.0.0-sl-24 --ip 172.30.0.3  --env-file ~/Github-action/3-Tier/secret/.env  -p ${{ secrets.PORT }}:3000 ${{ secrets.DOCKER_USERNAME }}/todo-backend:stable
-        
       - name: Frontend deploy
         run: |
           docker run -itd --name todofront-container --network=bridge-subas-script-172.30.0.0-sl-24 --ip 172.30.0.4  -p 5173:5173 ${{ secrets.DOCKER_USERNAME }}/todo-frontend:stable
@@ -160,30 +134,33 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-      
       - name: Login to Docker Hub
-        env:
-          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
-        run: docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
-      
+        run: docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
+      - name: Push Database Docker images
+        run: |
+          docker push ${{ secrets.DOCKER_USERNAME }}/todo-database:stable
+          docker push ${{ secrets.DOCKER_USERNAME }}/todo-database:$(git rev-parse HEAD)
+      - name: Push Backend Docker images
+        run: |
+          docker push ${{ secrets.DOCKER_USERNAME }}/todo-backend:stable
+          docker push ${{ secrets.DOCKER_USERNAME }}/todo-backend:$(git rev-parse HEAD)
+      - name: Push Frontend Docker images
+        run: |
+          docker push ${{ secrets.DOCKER_USERNAME }}/todo-frontend:stable
+          docker push ${{ secrets.DOCKER_USERNAME }}/todo-frontend:$(git rev-parse HEAD)
+      - name: Logout from Docker Hub
+        run: docker logout
 
   write_logs:
     runs-on: self-hosted
-    needs: [deploy,push_images]
+    needs: [push_images]
     steps:
-      - name: Checkout repository
+      - name: Checkout code
         uses: actions/checkout@v3
-              
       - name: Create log directory
         run: mkdir -p ~/Github-action/3-Tier/pipeline-log/
-           
-      - name: Copy GitHub Actions logs
-        run: cp -r $GITHUB_WORKSPACE/.github/workflows/ ~/Github-action/3-Tier/pipeline-log/
-        
-      - name: Create log file
+      - name: Save job logs
         run: |
-            git log --pretty=format:"%h" -n 1 > ~/Github-action/3-Tier/pipeline-log/git-commithash.log
-            echo $(date +'%Y-%m-%d') >> ~/Github-action/3-Tier/pipeline-log/git-commithash.log
-            cat ~/Github-action/3-Tier/pipeline-log/*.log >> ~/Github-action/3-Tier/pipeline-log/git-commithash-3-tier-log-$(date +'%Y-%m-%d').log
-        
+          for log_file in $GITHUB_WORKSPACE/**/*.log; do
+            cat $log_file >> ~/Github-action/3-Tier/pipeline-log/${log_file##*/}_$(date +'%Y-%m-%d_%H-%M').txt
+          done

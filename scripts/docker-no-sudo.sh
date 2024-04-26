@@ -19,9 +19,8 @@ else
     # Force logout and login for the current user
     echo "User added to the docker group. Logging out and logging in again..."
     sudo exec su - $USER
+    sudo systemctl restart docker
+    echo "docker service restarted to reflect change"
 fi
-
 echo "User successfully logged in again."
 # Restarting docker otherwise it will not run without sudo in github action
-sudo systemctl restart docker
-echo "docker service restarted to reflect change"
